@@ -1,17 +1,19 @@
-import { Play } from "phosphor-react";
-import { useForm } from "react-hook-form";
+import { useContext } from "react";
+import { HandPalm, Play } from "phosphor-react";
+import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
 
 import { 
-    CountDownContainer, 
-    FormContainer, 
     HomeContainer, 
-    MinutesAmountInput, 
-    Separator, 
     StartCountDownButton, 
-    TaskInput 
+    StopCountDownButton, 
 } from "./styles";
+
+import { NewCycleForm } from "./components/NewCycleForm";
+import { Countdown } from "./components/CountDown";
+import { CyclesContext } from "../../contexts/CyclesContext";
+
 
 const newCycleFormValidationSchema = zod.object({
 
@@ -24,9 +26,12 @@ const newCycleFormValidationSchema = zod.object({
 
 type NewCycleFormData = zod.infer<typeof newCycleFormValidationSchema>
 
+
 export function Home () {
 
-    const { register, handleSubmit, watch, reset } = useForm<NewCycleFormData>({
+    const { activeCycle, createNewCycle, interruptCurrentCycle } = useContext(CyclesContext)
+
+    const newCycleForm = useForm<NewCycleFormData>({
 
         resolver: zodResolver(newCycleFormValidationSchema),
         defaultValues: {
@@ -38,15 +43,17 @@ export function Home () {
 
     });
 
-    function handleCreateNewCycle (data: NewCycleFormData) {
-
-        console.log(data);
-        reset();
-
-    }
+    const { handleSubmit, watch, reset } = newCycleForm;
 
     const task = watch("task")
     const isSubmitDisabled = !task;
+
+    function handleCreateNewCycle (data: NewCycleFormData) {
+
+        createNewCycle(data);
+        reset();
+
+    }
 
     return (
   
@@ -54,53 +61,29 @@ export function Home () {
 
             <form onSubmit={handleSubmit(handleCreateNewCycle)}>
 
-                <FormContainer>
-                    <label htmlFor="task">Vou trabalhar em</label>
-                    <TaskInput 
-                        type="text" 
-                        id="taks" 
-                        list="task-suggestions" 
-                        placeholder="Dê um nome para o seu projeto" 
-                        {...register("task")}
-                    />
-                    <datalist id="task-suggestions">
+                
 
-                        <option value="Projeto 1" />
-                        <option value="Projeto 2" />
-                        <option value="Projeto 3" />
-                        <option value="Banana" />
+                    <FormProvider {...newCycleForm}>
+                        <NewCycleForm />
+                    </FormProvider>
 
-                    </datalist>
+                    <Countdown />
 
-                    <label htmlFor="minutesAmount">durante</label>
-                    <MinutesAmountInput 
-                        type="number"
-                        step={5}
-                        // min={5}
-                        // max={60}
-                        id="minutesAmount" 
-                        placeholder="00" 
-                        {...register("minutesAmount", { valueAsNumber: true })}
-                    />
+                { activeCycle ? (
 
-                    <span>minutos.</span>
-                </FormContainer>
+                    <StopCountDownButton onClick={interruptCurrentCycle} type="button">
+                        <HandPalm size={24}/>
+                        Interromper
+                    </StopCountDownButton>
 
+                ) : (
 
-                <CountDownContainer>
+                    <StartCountDownButton type="submit" disabled={isSubmitDisabled}>
+                        <Play size={24}/>
+                        Começar
+                    </StartCountDownButton>
 
-                    <span>0</span>
-                    <span>0</span>
-                    <Separator>:</Separator>
-                    <span>0</span>
-                    <span>0</span>
-
-                </CountDownContainer>
-
-                <StartCountDownButton type="submit" disabled={isSubmitDisabled}>
-                    <Play size={24}/>
-                    Começar
-                </StartCountDownButton>
+                )}
 
             </form>
 
